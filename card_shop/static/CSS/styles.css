@@ -1,0 +1,21 @@
+body{
+    background-color: black;
+    color:aliceblue;
+}
+.blockquote-footer{
+    color:rgb(225, 240, 254);
+}
+.disclaimer{
+    color: yellow
+}
+.full-section{
+    min-height: 90vh;
+    padding-top: 20px;
+}
+.text-muted{
+    color:white;
+}
+#search-section{
+    margin-top:10em;
+    margin-bottom:7em;
+}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block main %}
+{% include 'navbar.html' %}
+<div class="container" id="search-section">
+    <h1>Find A Card</h1>
+    <form class="d-flex" role="search" action="{{url_for('search')}}" method="Post">
+        {{ search.csrf_token }}
+        {{ search.search(class='form-control mx-2', placeholder='Find Cards', type='search') }}
+        <button class="btn btn-outline-light" type="submit">Search</button>
+      </form>
+</div>
+{% endblock %}

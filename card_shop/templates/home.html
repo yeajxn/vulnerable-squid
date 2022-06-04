@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block main %}
+{% include 'navbar.html' %}
+<div class="container my-5 full-section text-center">
+    <img class="img-fluid mb-4" src="{{url_for('static', filename='images/TCS-Logo.png') }}">
+    <h1>The Card Spot</h1>
+</div>
+<div class="container full-section" id="about">
+    <h1>About Us</h1>
+    <div class="'container py-3">
+        <div class="row">
+            <div class="col">
+                <h2>Born out of necessity</h2>
+                <p>In order to complete his school project, this website was created by yeajxn.</p>
+                <h2>What we offer</h2>
+                <p>Get your favourite pieces of cardboard at exhorbitant prices!</p>
+                <p>No matter how "rare" a card is, we can always just print more. So don't worry, we will always have them in stock!</p>
+            </div>
+            <div class="col">
+                <h2>We gurantee the Best Service</h2>
+                <p>Hear from our satisfied customers</p>
+                <figure>
+                    <blockquote class="blockquote">
+                        <p>The service is ****!</p>
+                    </blockquote>
+                    <figcaption class="blockquote-footer">
+                        Keto Saiba                            
+                    </figcaption>
+                </figure>
+                <figure>
+                    <blockquote class="blockquote">
+                        <p>If I could give it 5 stars, I would give it 5 out of a 100</p>
+                    </blockquote>
+                    <figcaption class="blockquote-footer">
+                        Yummy Yugi                       
+                    </figcaption>
+                </figure>
+                <figure>
+                    <blockquote class="blockquote">
+                        <p>I don't know what he saying</p>
+                    </blockquote>
+                    <figcaption class="blockquote-footer">
+                        Renna                       
+                    </figcaption>
+                </figure>
+
+            </div>
+        </div>
+        <div class="row mt-5 text-center disclaimer">
+            <h1>Disclaimer</h1>
+                <p class="fs-3">This website does not offer any legitimate services. </p>
+                <p>Any relations to any figures or characters is purely coincidental.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

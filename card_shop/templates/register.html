@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block main %}
+{% include 'navbar.html' %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-sm-10 col-md-6 offset-md-3 offset-sm-1">
+            <h1 class="my-3">Register</h1>
+        </div>
+    </div>
+</div>
+<div class="container">
+    <div class="row">
+        <div class="col-sm-10 col-md-6 offset-md-3 offset-sm-1">
+            <form method="post">
+                {{ form.csrf_token }}
+                {{ form.username.label(class='form-label') }}
+                {{ form.username(class='form-control') }}
+                {{ form.email.label(class='form-label') }}
+                {{ form.email(class='form-control') }}
+                {{ form.password.label(class='form-label') }}
+                {{ form.password(class='form-control') }}
+                {{ form.confirm.label(class='form-label') }}
+                {{ form.confirm(class='form-control') }}
+                <button class="btn btn-light my-3 d-block mx-auto">Register</button>
+            </form>
+        </div>
+    </div>
+    {% if error %}
+        {% include "error.html" %}
+    {% endif %}
+    <div class="row mt-2 p-3 border-top">
+        <small class="text-white text-center">Already have an account? <a href="{{url_for('login')}}">Login here.</a></small>
+    </div>  
+</div>
+{% endblock %}
