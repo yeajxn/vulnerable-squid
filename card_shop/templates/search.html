@@ -2,12 +2,62 @@
 
 {% block main %}
 {% include 'navbar.html' %}
-<div class="container" id="search-section">
+<div class="container">
+  <div class="row" id="search-section">
     <h1>Find A Card</h1>
     <form class="d-flex" role="search" action="{{url_for('search')}}" method="Post">
-        {{ search.csrf_token }}
-        {{ search.search(class='form-control mx-2', placeholder='Find Cards', type='search') }}
-        <button class="btn btn-outline-light" type="submit">Search</button>
-      </form>
+      {{ search.csrf_token }}
+      {{ search.search(class='form-control mx-2', placeholder='Find Cards', type='search') }}
+      <button class="btn btn-outline-light" type="submit">Search</button>
+    </form>
+  </div>
+  {% if cards %}
+  <div class="row card-row">
+    {% for i in range(cards|length) %}
+      {% if i%3 == 0 and i != 0 %}
+        </div>
+        <div class="row card-row">
+      {% endif %}
+        <div class="col-md-4">
+          <button class="btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-{{ cards[i].cardID }}" aria-controls="offcanvasTop">
+            <img class="img-fluid" src="{{ cards[i].image }}">
+          </button>
+          <div class="offcanvas offcanvas-top" tabindex="-1" id="offcanvas-{{ cards[i].cardID }}" aria-labelledby="offcanvas-{{ cards[i].cardID }}-label">
+            <div class="offcanvas-header">
+              <h3 class="offcanvas-title text-black" id="offcanvas-{{ cards[i].cardID }}-label">{{ cards[i].name }}</h3>
+              <h5></h5>
+              <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body text-black">
+              <p>{{cards[i].text}}</p>
+              <h5>Available: {{cards[i].quantity}}</h5>
+              <h5>Price: {{ "{:.2f}".format(cards[i].price) }}</h5>
+              <div class="row">
+                <form method="post" action="{{ url_for('cart') }}">
+                  {{ forms[i].csrf_token }}
+                  <div class="col-sm-1">
+                    {{ forms[i].quantity.label(class="col-sm-2 col-form-label") }}
+                  </div>
+                  <div class="col-sm-4">
+                      {{ forms[i].id }}
+                      {{ forms[i].quantity(class="form-control") }}
+                  </div>
+                  <div class="col-sm-7">
+                    <button class="btn btn-dark mt-2">Add to Cart</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+    {% endfor %}
+  </div>
+  {% else %}
+    {% include 'alert.html' %}
+  <div class="row card-row">
+    <h1>No cards found :(</h1>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

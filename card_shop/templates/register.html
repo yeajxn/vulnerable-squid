@@ -15,22 +15,22 @@
             <form method="post">
                 {{ form.csrf_token }}
                 {{ form.username.label(class='form-label') }}
-                {{ form.username(class='form-control') }}
+                {{ form.username(class='form-control mb-2') }}
                 {{ form.email.label(class='form-label') }}
-                {{ form.email(class='form-control') }}
+                {{ form.email(class='form-control mb-2') }}
                 {{ form.password.label(class='form-label') }}
-                {{ form.password(class='form-control') }}
+                {{ form.password(class='form-control mb-2') }}
                 {{ form.confirm.label(class='form-label') }}
-                {{ form.confirm(class='form-control') }}
+                {{ form.confirm(class='form-control mb-2') }}
                 <button class="btn btn-light my-3 d-block mx-auto">Register</button>
             </form>
         </div>
     </div>
-    {% if error %}
-        {% include "error.html" %}
-    {% endif %}
+    {% include 'alert.html' %}
     <div class="row mt-2 p-3 border-top">
-        <small class="text-white text-center">Already have an account? <a href="{{url_for('login')}}">Login here.</a></small>
+        <small class="text-white text-center">Already have an account? 
+            <a href="{{url_for('login')}}">Login here.</a>
+        </small>
     </div>  
 </div>
 {% endblock %}

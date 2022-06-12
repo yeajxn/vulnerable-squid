@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block main %}
+{% include 'navbar.html' %}
+    <div class="container full-section">
+        {% include 'alert.html' %}
+        {% if orders %}
+        <h1>Orders</h1>
+        {% for order in orders %}
+        <div class="card bg-dark text-white my-3">
+            <div class="card-body">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col">
+                            <h3 class="card-title">Order: AEO355F1-{{order.orderID}}</h3>
+                            <h4>Date: {{ order.date.strftime('%d %b %y %I:%M%p') }}</h4>
+                            <h4>Total: ${{ "{:.2f}".format(order.total) }}</h4>
+                        </div>
+                        <div class="col text-end">
+                            {% for card in order.cards %}
+                                <h4>{{card.cardInfo.name}}</h4>
+                                <h5>Quantity: {{card.quantity}}</h5>
+                                <br>
+                            {% endfor %} 
+                        </div>
+                    </div>
+                </div>
+               </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <h1 class="text-center">You haven't made any orders!</h1>
+        {% endif %}
+    </div>
+
+{% endblock %}

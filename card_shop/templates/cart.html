@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block main %}
+{% include 'navbar.html' %}
+<div class="container full-section">
+    <div class="row">
+        <div class="col-md-6">
+            <h1>Cart</h1>
+        </div>
+        {% if cart %}
+            <div class="col-md-6">
+                <form method="post", action="{{url_for('cart_delete_all')}}">
+                    {{clear_cart.csrf_token}}
+                    <button class="btn btn-outline-danger">🗑️ Clear Cart</button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+    {% include 'alert.html' %}
+    <div class="row">
+        <div class="col-md-8">
+            {% if cart %}
+                {% for i in range (cart|length) %}
+                <div class="cart-item mb-3 p-2">
+                    <div class="card bg-dark text-white">
+                        <div class="card-body">
+                            <div class="container-fluid">
+                                <div class="row">
+                                    <div class="col">
+                                        <h3 class="card-title">{{cart[i].cardInfo.name}}</h3>
+                                        <h4 class="card-subtitle text-white mb-2">Quantity: {{cart[i].quantity}}</h4>
+                                        <p>${{"{:.2f}".format(cart[i].cardInfo.price)}}/pc</p>   
+                                        </div>
+                                    <div class="col text-end">
+                                        <form method="post" action="{{ url_for('cart_delete') }}">
+                                            {{ cart_delete_forms[i].csrf_token }}
+                                            {{ cart_delete_forms[i].id }}
+                                            <button class="btn btn-danger my-3">Remove Item</button>
+                                        </form>
+                                        <h5 class="card-subtitle text-white my-2 pt-2 border-top">Subtotal: ${{ "{:.2f}".format(cart[i].cardInfo.price * cart[i].quantity) }}</h5>     
+                                    </div>
+                                </div>
+                            </div>
+                           </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <h2>Your cart is empty!</h2>
+            {% endif %}
+        </div>
+        {% if cart %}
+        <div class="col-md-4 cart-summary">
+            <h2>Total</h2>
+            <h3>${{ "{:.2f}".format(total) }}</h3>
+            <form method="post" action="{{ url_for('checkout') }}">
+                {{ checkout.csrf_token }}
+                <button class="btn btn-lg btn-success my-2">
+                    Checkout
+                </button>
+            </form>
+            
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

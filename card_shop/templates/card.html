@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block main %}
+{% include 'navbar.html' %}
+<div class="container full-section">
+    <div class="row mb-3">
+        <h1>{{headertext}}</h1>
+    </div>
+    {% include 'alert.html' %}
+    <div class="row p-2">
+        <div class="col-sm-10 col-md-6 offset-md-3 offset-sm-1">
+            <form method="post">
+                {{ form.csrf_token }}
+                {{ form.name.label(class='form-label') }}
+                {{ form.name(class='form-control mb-3') }}
+                {{ form.image.label(class='form-label') }}
+                {{ form.image(class='form-control mb-3') }}
+                {{ form.type.label(class='form-label') }}
+                {{ form.type(class='form-control mb-3') }}
+                {{ form.text.label(class='form-label') }}
+                {{ form.text(class='form-control mb-3') }}
+                {{ form.attack.label(class='form-label') }}
+                {{ form.attack(class='form-control mb-3') }}
+                {{ form.hp.label(class='form-label') }}
+                {{ form.hp(class='form-control mb-3') }}
+                {{ form.price.label(class='form-label') }}
+                {{ form.price(class='form-control mb-3') }}
+                {{ form.quantity.label(class='form-label') }}
+                {{ form.quantity(class='form-control mb-3') }}
+                <button class="btn btn-success my-3 d-block mx-auto">{{buttontext}}</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

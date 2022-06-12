@@ -11,20 +11,40 @@
           <li class="nav-item">
             <a class="nav-link" href="{{url_for('search')}}">Latest Cards</a>
           </li>
-          <form class="d-flex" role="search" action="{{url_for('search')}}" method="Post">
+          <form class="d-flex" role="search" action="{{url_for('search')}}" method="post">
             {{ search.csrf_token }}
             {{ search.search(class='form-control mx-2', placeholder='Search Cards', type='search') }}
             <button class="btn btn-outline-dark" type="submit">Search</button>
           </form>
     
         </ul>
-        <ul class="navbar-nav ms-auto me-2"> 
+        <ul class="navbar-nav ms-auto me-2">
           <li class="nav-item">
-            <img class="me-2" src="{{ url_for('static', filename='images/cart-fill.svg') }}" alt="Cart" width="30" height="30">
+            <a href=" {{ url_for('cart') }}" class="navbar-brand">
+              <img width="30" height="24" class="d-inline-block align-text-top" src="{{ url_for('static', filename='images/cart-fill.svg') }}" alt="Cart">
+            </a>
           </li>
+          {% if current_user.is_authenticated %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              {{ current_user.username }}
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+              {% if current_user.user_type == 'A' %}
+              <li><a href="{{url_for('manage')}}" class="dropdown-item">Manage Shop</a></li>
+              {% endif %}
+              <li><a class="dropdown-item" href="{{ url_for('change_password') }}">Change Password</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('orders') }}">Orders</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
+            </ul>
+          </li>
+  
+          {% else %}
           <li class="nav-item">
             <a class="nav-link" href="{{url_for('login')}}">Login</a>
           </li>
+          {% endif %}
         </ul>
       </div>
     </div>
