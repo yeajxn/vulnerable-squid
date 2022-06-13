@@ -65,7 +65,7 @@ class AddCardForm(FlaskForm):
     type = SelectField('Type', choices=[('Dark'), ('Fire'), ('Light'), ('Magic'), ('Water')], validate_choice=True)
     text = StringField('Card Text', validators=[
         InputRequired(),
-        Regexp("^[\w\-\.\,\"\' ]{1,180}$", message='Invalid card text')
+        Regexp("^[\w\-\.\?\,\"\' ]{1,180}$", message='Invalid card text')
     ])
     attack = IntegerField('Attack', validators=[
         Optional(),
