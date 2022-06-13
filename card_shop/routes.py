@@ -64,7 +64,7 @@ def cart():
         cart_delete_form.id.data = item.cardID
         cart_delete_forms.append(cart_delete_form)
     return render_template('cart.html', cart=cart, search=search, total=total, 
-    cart_delete_forms=cart_delete_forms, checkout=checkout, clear_cart=clear_cart)
+    cart_delete_forms=cart_delete_forms, checkout=checkout, clear_cart=clear_cart, title='The Card Spot - Cart')
 
 @app.route('/cart/delete', methods=['POST'])
 @login_required
@@ -155,7 +155,7 @@ def change_password():
             flash('Unable to change password. Check your current password', 'danger')
     elif request.method == 'POST':
         flash(next(iter(form.errors.values()))[0], 'danger')
-    return render_template('changePassword.html', search=search, form=form)
+    return render_template('changePassword.html', search=search, form=form, title='Change Password')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -177,7 +177,7 @@ def login():
             error = next(iter(form.errors.values()))[0]
             flash(error, 'danger')
 
-    return render_template('login.html', title='The Card Stop - Login', form=form, search=search)
+    return render_template('login.html', title='The Card Spot - Login', form=form, search=search)
 
 @app.route('/logout')
 @login_required
@@ -198,7 +198,7 @@ def manage():
     else:
         flash(f'Invalid search: {searchForm.search.data}', 'info')
         cards=None
-    return render_template('manageCards.html', search=searchForm, cards=cards)
+    return render_template('manageCards.html', search=searchForm, cards=cards, title='Manage Shop')
 
 @app.route('/manage/add_card', methods=['GET', 'POST'])
 @admin_required
@@ -223,7 +223,7 @@ def manage_add_card():
         return redirect(url_for('manage'))
     elif request.method == 'POST':
         flash(next(iter(form.errors.values()))[0], 'warning')
-    return render_template('card.html', search=search, form=form, buttontext=buttontext, headertext=headertext)
+    return render_template('card.html', search=search, form=form, buttontext=buttontext, headertext=headertext, title='Manage Shop - Add Card')
 
 @app.route('/manage/edit/<id>', methods=['GET', 'POST'])
 @admin_required
@@ -247,7 +247,8 @@ def manage_edit_card(id):
             flash(next(iter(form.errors.values()))[0], 'warning')
         buttontext = 'Confirm'
         headertext = f'Edit {card.name}'
-        return render_template('card.html', search=search, form=form, headertext=headertext, buttontext=buttontext)
+        return render_template('card.html', search=search, form=form, headertext=headertext, buttontext=buttontext, 
+        title='Manage Shop - Edit Card')
     flash('Something went wrong', 'danger')
     return redirect(url_for('manage'))
 
@@ -255,7 +256,7 @@ def manage_edit_card(id):
 def orders():
     search= SearchForm()
     orders = Order.query.filter_by(userID=current_user.userID)
-    return render_template('orders.html', search=search, orders=orders.all())
+    return render_template('orders.html', search=search, orders=orders.all(), title='The Card Spot - Orders')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
