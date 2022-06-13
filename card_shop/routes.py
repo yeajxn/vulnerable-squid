@@ -1,23 +1,27 @@
 from functools import wraps
-
 from . import app, db
-from flask import render_template, redirect, url_for, request, flash, abort
-from flask_login import login_required, login_user, logout_user, current_user
+from flask import render_template, redirect, url_for, request, flash, make_response
 from .forms import AddCardForm, LoginForm, RegisterForm, SearchForm 
 from .forms import ChangePasswordForm, CartForm, CartDeleteForm, CartDeleteAllForm, CheckoutForm
 from .models import Cart, User, Card, Order, CardOrders
 from .hashing import hash_password, check_hash
 
-#Decorator function for access to admin pages
-def admin_required(f):
+def logged_in(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if current_user.is_anonymous:
-            flash('Please login to continue', 'warning')
+        if not request.cookies.get('logged_in'):
+            flash('Login required', 'warning')
             return redirect(url_for('login'))
-        if current_user.user_type != 'A':
-            abort(403)
         return f(*args, **kwargs)
+    return wrapper
+
+def admin_user(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if request.cookies.get('user_type'):
+            return f(*args, **kwargs)
+        flash('Unauthorized', 'danger')
+        return redirect(url_for('home'))
     return wrapper
 
 def search_cards(search):
@@ -30,7 +34,7 @@ def home():
     return render_template('home.html', title='The Card Spot - Home', search=search)
 
 @app.route('/cart', methods=['GET', 'POST'])
-@login_required
+@logged_in
 def cart():
     search=SearchForm()
     form = CartForm()
@@ -40,13 +44,13 @@ def cart():
         cardID = form.id.data
         quantity = form.quantity.data
 
-        cart_item = Cart.query.filter(Cart.userID==current_user.userID, Cart.cardID==cardID).first()
+        cart_item = Cart.query.filter(Cart.userID==request.cookies.get('userID'), Cart.cardID==cardID).first()
         if cart_item:
             cart_item.quantity += int(quantity)
             db.session.commit()
             flash('Cart quantity updated', 'success')
         else:
-            cart_item = Cart(userID=current_user.userID, cardID=cardID, quantity=quantity)
+            cart_item = Cart(userID=request.cookies.get('userID'), cardID=cardID, quantity=quantity)
             db.session.add(cart_item)
             db.session.commit()
             flash('Item added to card', 'success')
@@ -54,7 +58,7 @@ def cart():
         flash('Something went wrong', 'warning')
         return redirect(url_for('search'))
         
-    cart = current_user.cart
+    cart = None
     print(cart)
     total = 0
     cart_delete_forms = []
@@ -67,11 +71,11 @@ def cart():
     cart_delete_forms=cart_delete_forms, checkout=checkout, clear_cart=clear_cart, title='The Card Spot - Cart')
 
 @app.route('/cart/delete', methods=['POST'])
-@login_required
+@logged_in
 def cart_delete():
     form = CartDeleteForm()
     if form.validate_on_submit():
-        item = Cart.query.filter(Cart.userID==current_user.userID, Cart.cardID==form.id.data).first()
+        item = Cart.query.filter(Cart.userID==request.cookies.get('userID'), Cart.cardID==form.id.data).first()
         if item:
             db.session.delete(item)
             db.session.commit()
@@ -81,11 +85,11 @@ def cart_delete():
     return redirect(url_for('cart'))
 
 @app.route('/cart/delete-all', methods=['POST'])
-@login_required
+@logged_in
 def cart_delete_all():
     form = CartDeleteAllForm()
     if form.validate_on_submit():
-        check = Cart.query.filter_by(userID = current_user.userID)
+        check = Cart.query.filter_by(userID = request.cookies.get('userID'))
         if check.first():
             check.delete()
             db.session.commit()
@@ -95,15 +99,15 @@ def cart_delete_all():
     return redirect(url_for('cart'))
 
 @app.route('/checkout', methods=['POST'])
-@login_required
+@logged_in
 def checkout():
     form = CheckoutForm()
     if form.validate_on_submit():
-        users_cart = Cart.query.filter_by(userID = current_user.userID)
+        users_cart = Cart.query.filter_by(userID = request.cookies.get('userID'))
         if users_cart.first():
             
             #create new order
-            new_order = Order(userID=current_user.userID, total=0)
+            new_order = Order(userID=request.cookies.get('userID'), total=0)
             db.session.add(new_order)
             db.session.commit()
             
@@ -141,15 +145,14 @@ def checkout():
 
 
 @app.route('/change_password', methods=['GET', 'POST'])
-@login_required
+@logged_in
 def change_password():
     form = ChangePasswordForm()
     search = SearchForm()
     if form.validate_on_submit():
-        if check_hash(current_user.password, form.current.data):
+        if form.current.data:
             hash = hash_password(form.new.data)
-            current_user.password = hash
-            db.session.commit()
+            
             flash('Password changed', 'success')
         else:
             flash('Unable to change password. Check your current password', 'danger')
@@ -159,7 +162,7 @@ def change_password():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if current_user.is_authenticated:
+    if request.cookies.get('logged_in'):
         return redirect(url_for('home'))
     search = SearchForm()
     form = LoginForm()
@@ -169,8 +172,11 @@ def login():
             identifier = form.username.data.lower()
             user = User.query.filter((User.username==identifier)|(User.email==identifier)).first()
             if user and check_hash(user.password, form.password.data):
-                login_user(user)
-                return redirect(url_for('home'))
+                resp = make_response(redirect(url_for('home')))
+                resp.set_cookie('logged_in', '1')
+                resp.set_cookie('userid', str(user.userID))
+                resp.set_cookie('username', str(user.username))
+                return resp
             else:
                 flash('Invalid username or password', 'danger')
         else:
@@ -180,15 +186,16 @@ def login():
     return render_template('login.html', title='The Card Spot - Login', form=form, search=search)
 
 @app.route('/logout')
-@login_required
+@logged_in
 def logout():
-    logout_user()
+    resp = make_response(redirect(url_for('login')))
+    for cookie in request.cookies:
+        resp.delete_cookie(cookie)
     flash('User logged out', 'success')
-    return redirect(url_for('login'))
+    return resp
 
 
 @app.route('/manage', methods=['GET', 'POST'])
-@admin_required
 def manage():
     searchForm = SearchForm()
     if searchForm.validate_on_submit():
@@ -201,7 +208,6 @@ def manage():
     return render_template('manageCards.html', search=searchForm, cards=cards, title='Manage Shop')
 
 @app.route('/manage/add_card', methods=['GET', 'POST'])
-@admin_required
 def manage_add_card():
     search = SearchForm()
     form = AddCardForm()
@@ -226,7 +232,6 @@ def manage_add_card():
     return render_template('card.html', search=search, form=form, buttontext=buttontext, headertext=headertext, title='Manage Shop - Add Card')
 
 @app.route('/manage/edit/<id>', methods=['GET', 'POST'])
-@admin_required
 def manage_edit_card(id):
     search = SearchForm()
     card = Card.query.get(id)
@@ -253,6 +258,7 @@ def manage_edit_card(id):
     return redirect(url_for('manage'))
 
 @app.route('/orders')
+@logged_in
 def orders():
     search= SearchForm()
     orders = Order.query.filter_by(userID=current_user.userID)
@@ -281,7 +287,6 @@ def register():
     return render_template('register.html', title='The Card Spot- Register', form=form, search=search)    
 
 @app.route('/search', methods=['GET', 'POST'])
-@login_required
 def search():
     search = SearchForm()
     if search.validate_on_submit():

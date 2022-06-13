@@ -1,12 +1,7 @@
-from . import db, login
-from flask_login import UserMixin
+from . import db
 from datetime import datetime
 
-@login.user_loader
-def user_loader(user_id):
-    return User.query.get(user_id)
-
-class User(UserMixin, db.Model):
+class User(db.Model):
     userID = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
@@ -14,9 +9,6 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(100), nullable=False)
     user_type = db.Column(db.String(1), nullable=False, default='U')
     cart = db.relationship('Cart', lazy=True)
-
-    def get_id(self):
-        return self.userID
 
 class Card(db.Model):
     cardID = db.Column(db.Integer, primary_key=True)
