@@ -1,5 +1,6 @@
 from . import db
-from datetime import datetime
+from datetime import datetime    
+
 
 class User(db.Model):
     userID = db.Column(db.Integer, primary_key=True)

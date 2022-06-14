@@ -3,8 +3,10 @@ from . import app, db
 from flask import render_template, redirect, url_for, request, flash, make_response
 from .forms import AddCardForm, LoginForm, RegisterForm, SearchForm 
 from .forms import ChangePasswordForm, CartForm, CartDeleteForm, CartDeleteAllForm, CheckoutForm
-from .models import Cart, User, Card, Order, CardOrders
-from .hashing import hash_password, check_hash
+from .models import Cart, Card, Order, CardOrders
+from .database import getUser
+from .database import User
+
 
 def logged_in(f):
     @wraps(f)
@@ -44,13 +46,13 @@ def cart():
         cardID = form.id.data
         quantity = form.quantity.data
 
-        cart_item = Cart.query.filter(Cart.userID==request.cookies.get('userID'), Cart.cardID==cardID).first()
+        cart_item = Cart.query.filter(Cart.userID==request.cookies.get('userid'), Cart.cardID==cardID).first()
         if cart_item:
             cart_item.quantity += int(quantity)
             db.session.commit()
             flash('Cart quantity updated', 'success')
         else:
-            cart_item = Cart(userID=request.cookies.get('userID'), cardID=cardID, quantity=quantity)
+            cart_item = Cart(userID=request.cookies.get('userid'), cardID=cardID, quantity=quantity)
             db.session.add(cart_item)
             db.session.commit()
             flash('Item added to card', 'success')
@@ -75,7 +77,7 @@ def cart():
 def cart_delete():
     form = CartDeleteForm()
     if form.validate_on_submit():
-        item = Cart.query.filter(Cart.userID==request.cookies.get('userID'), Cart.cardID==form.id.data).first()
+        item = Cart.query.filter(Cart.userID==request.cookies.get('userid'), Cart.cardID==form.id.data).first()
         if item:
             db.session.delete(item)
             db.session.commit()
@@ -89,7 +91,7 @@ def cart_delete():
 def cart_delete_all():
     form = CartDeleteAllForm()
     if form.validate_on_submit():
-        check = Cart.query.filter_by(userID = request.cookies.get('userID'))
+        check = Cart.query.filter_by(userID = request.cookies.get('userid'))
         if check.first():
             check.delete()
             db.session.commit()
@@ -103,11 +105,11 @@ def cart_delete_all():
 def checkout():
     form = CheckoutForm()
     if form.validate_on_submit():
-        users_cart = Cart.query.filter_by(userID = request.cookies.get('userID'))
+        users_cart = Cart.query.filter_by(userID = request.cookies.get('userid'))
         if users_cart.first():
             
             #create new order
-            new_order = Order(userID=request.cookies.get('userID'), total=0)
+            new_order = Order(userID=request.cookies.get('userid'), total=0)
             db.session.add(new_order)
             db.session.commit()
             
@@ -150,12 +152,17 @@ def change_password():
     form = ChangePasswordForm()
     search = SearchForm()
     if form.validate_on_submit():
-        if form.current.data:
-            hash = hash_password(form.new.data)
-            
-            flash('Password changed', 'success')
+        new = form.new.data
+        current = form.current.data
+        user = getUser(userID=int(request.cookies.get('userid')))
+        if user:
+            if user.password == current:   
+                user.password = new
+                flash('Password changed', 'success')
+            else:
+                flash('Invalid password', 'warning')
         else:
-            flash('Unable to change password. Check your current password', 'danger')
+            flash('Uh oh something went wrong', 'danger ')
     elif request.method == 'POST':
         flash(next(iter(form.errors.values()))[0], 'danger')
     return render_template('changePassword.html', search=search, form=form, title='Change Password')
@@ -170,8 +177,8 @@ def login():
     if request.method == 'POST':
         if form.validate_on_submit():
             identifier = form.username.data.lower()
-            user = User.query.filter((User.username==identifier)|(User.email==identifier)).first()
-            if user and check_hash(user.password, form.password.data):
+            user = getUser(username=identifier)
+            if user:
                 resp = make_response(redirect(url_for('home')))
                 resp.set_cookie('logged_in', '1')
                 resp.set_cookie('userid', str(user.userID))
@@ -261,7 +268,7 @@ def manage_edit_card(id):
 @logged_in
 def orders():
     search= SearchForm()
-    orders = Order.query.filter_by(userID=current_user.userID)
+    orders = Order.query.filter_by(userID=request.cookies['userid'])
     return render_template('orders.html', search=search, orders=orders.all(), title='The Card Spot - Orders')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -270,16 +277,14 @@ def register():
     form = RegisterForm()
     if form.validate_on_submit():
         username = form.username.data.lower()
-        hash = hash_password(form.password.data)
         email = form.email.data.lower()
-        exists = User.query.filter((User.username==username)|(User.email==email)).first()
+        exists = getUser(username=username, email=email)
+
         if exists:
             flash('Username or email already in use', 'warning')
         else:
-            new_user = User(username=username,password=hash, email=email)
-            db.session.add(new_user)
-            db.session.commit()
-            flash('User successfully registered!', 'success')
+            user = User(username=username,password=form.password.data, email=email, create_user=True)
+            flash(f'{user.username} successfully registered!', 'success')
 
     elif request.method == 'POST':
         flash(next(iter(form.errors.values()))[0], 'danger')
