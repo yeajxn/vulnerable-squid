@@ -13,7 +13,7 @@
                     <div class="row">
                         <div class="col">
                             <h3 class="card-title">Order: AEO355F1-{{order.orderID}}</h3>
-                            <h4>Date: {{ order.date.strftime('%d %b %y %I:%M%p') }}</h4>
+                            <h4>Date: {{ order.date }}</h4>
                             <h4>Total: ${{ "{:.2f}".format(order.total) }}</h4>
                         </div>
                         <div class="col text-end">

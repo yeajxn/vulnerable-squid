@@ -11,8 +11,7 @@
           <li class="nav-item">
             <a class="nav-link" href="{{url_for('search')}}">Latest Cards</a>
           </li>
-          <form class="d-flex" role="search" action="{{url_for('search')}}" method="post">
-            {{ search.csrf_token }}
+          <form class="d-flex" role="search" action="{{url_for('search')}}">
             {{ search.search(class='form-control mx-2', placeholder='Search Cards', type='search') }}
             <button class="btn btn-outline-dark" type="submit">Search</button>
           </form>
@@ -24,7 +23,7 @@
               <img width="30" height="24" class="d-inline-block align-text-top" src="{{ url_for('static', filename='images/cart-fill.svg') }}" alt="Cart">
             </a>
           </li>
-          {% if request.cookies.get('userid') %}
+          {% if request.cookies.get('userID') %}
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
               {{ request.cookies.get('username') }}

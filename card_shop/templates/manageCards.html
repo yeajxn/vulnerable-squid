@@ -10,7 +10,6 @@
     <div class="row mb-3">
         <div class="col-sm-6 offset-sm-3">
             <form class="d-flex" role="search" action="{{url_for('manage')}}" method="Post">
-                {{ search.csrf_token }}
                 <button class="btn btn-outline-light" type="submit">Search</button>
                 {{ search.search(class='form-control mx-2', placeholder='Search Cards', type='search') }}
             </form>

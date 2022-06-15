@@ -10,7 +10,6 @@
         {% if cart %}
             <div class="col-md-6">
                 <form method="post", action="{{url_for('cart_delete_all')}}">
-                    {{clear_cart.csrf_token}}
                     <button class="btn btn-outline-danger">🗑️ Clear Cart</button>
                 </form>
             </div>
@@ -33,7 +32,6 @@
                                         </div>
                                     <div class="col text-end">
                                         <form method="post" action="{{ url_for('cart_delete') }}">
-                                            {{ cart_delete_forms[i].csrf_token }}
                                             {{ cart_delete_forms[i].id }}
                                             <button class="btn btn-danger my-3">Remove Item</button>
                                         </form>
@@ -54,7 +52,6 @@
             <h2>Total</h2>
             <h3>${{ "{:.2f}".format(total) }}</h3>
             <form method="post" action="{{ url_for('checkout') }}">
-                {{ checkout.csrf_token }}
                 <button class="btn btn-lg btn-success my-2">
                     Checkout
                 </button>

@@ -5,12 +5,16 @@
 <div class="container">
   <div class="row" id="search-section">
     <h1>Find A Card</h1>
-    <form class="d-flex" role="search" action="{{url_for('search')}}" method="Post">
-      {{ search.csrf_token }}
+    <form class="d-flex" role="search" action="{{url_for('search')}}">
       {{ search.search(class='form-control mx-2', placeholder='Find Cards', type='search') }}
       <button class="btn btn-outline-light" type="submit">Search</button>
     </form>
   </div>
+  {% if searchterm %}
+  <div class="row my-3">
+    <h3>Search: {{searchterm|safe}}</h3>
+  </div>
+  {% endif %}
   {% if cards %}
   <div class="row card-row">
     {% for i in range(cards|length) %}
@@ -34,7 +38,6 @@
               <h5>Price: {{ "{:.2f}".format(cards[i].price) }}</h5>
               <div class="row">
                 <form method="post" action="{{ url_for('cart') }}">
-                  {{ forms[i].csrf_token }}
                   <div class="col-sm-1">
                     {{ forms[i].quantity.label(class="col-sm-2 col-form-label") }}
                   </div>

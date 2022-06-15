@@ -1,12 +1,12 @@
 from functools import wraps
-from . import app, db
+from . import app
 from flask import render_template, redirect, url_for, request, flash, make_response
 from .forms import AddCardForm, LoginForm, RegisterForm, SearchForm 
 from .forms import ChangePasswordForm, CartForm, CartDeleteForm, CartDeleteAllForm, CheckoutForm
-from .models import Cart, Card, Order, CardOrders
-from .database import getUser
-from .database import User
-
+from .database import create_card_orders, getUser, get_card, get_cards, get_cart, get_cart_item, get_order, get_orders
+from .database import create_user, create_card, add_to_cart, create_order, check_login
+from .database import delete_cart_item, delete_cart
+from datetime import datetime
 
 def logged_in(f):
     @wraps(f)
@@ -20,15 +20,10 @@ def logged_in(f):
 def admin_user(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if request.cookies.get('user_type'):
+        if request.cookies.get('user_type') == 'A':
             return f(*args, **kwargs)
-        flash('Unauthorized', 'danger')
         return redirect(url_for('home'))
     return wrapper
-
-def search_cards(search):
-    cards = Card.query.filter(Card.name.like(f'%{search}%'), Card.quantity > 0).all()
-    return cards
 
 @app.route("/")
 def home():
@@ -43,25 +38,21 @@ def cart():
     checkout = CheckoutForm()
     clear_cart = CartDeleteAllForm()
     if form.validate_on_submit():
-        cardID = form.id.data
+        cardID = int(form.id.data)
         quantity = form.quantity.data
-
-        cart_item = Cart.query.filter(Cart.userID==request.cookies.get('userid'), Cart.cardID==cardID).first()
+        cart_item = get_cart_item(request.cookies.get('userID'), form.id.data)
         if cart_item:
             cart_item.quantity += int(quantity)
-            db.session.commit()
             flash('Cart quantity updated', 'success')
         else:
-            cart_item = Cart(userID=request.cookies.get('userid'), cardID=cardID, quantity=quantity)
-            db.session.add(cart_item)
-            db.session.commit()
+            add_to_cart(cardID, request.cookies.get('userID'), quantity)
             flash('Item added to card', 'success')
+
     elif request.method == 'POST':
         flash('Something went wrong', 'warning')
         return redirect(url_for('search'))
         
-    cart = None
-    print(cart)
+    cart = get_cart(request.cookies.get('userID'))
     total = 0
     cart_delete_forms = []
     for item in cart:
@@ -77,13 +68,10 @@ def cart():
 def cart_delete():
     form = CartDeleteForm()
     if form.validate_on_submit():
-        item = Cart.query.filter(Cart.userID==request.cookies.get('userid'), Cart.cardID==form.id.data).first()
-        if item:
-            db.session.delete(item)
-            db.session.commit()
-            flash('Item removed from cart', 'success')
-        else:
-            flash('Something went wrong, unable to remove cart item', 'danger')
+        delete_cart_item(request.cookies.get('userID'), form.id.data)
+        flash('Item removed from cart', 'success')
+    else:
+        flash('Something went wrong, unable to remove cart item', 'danger')
     return redirect(url_for('cart'))
 
 @app.route('/cart/delete-all', methods=['POST'])
@@ -91,13 +79,10 @@ def cart_delete():
 def cart_delete_all():
     form = CartDeleteAllForm()
     if form.validate_on_submit():
-        check = Cart.query.filter_by(userID = request.cookies.get('userid'))
-        if check.first():
-            check.delete()
-            db.session.commit()
-            flash('Emptied cart', 'success')
-        else:
-            flash('Nothing in cart', 'info')
+        delete_cart(request.cookies.get('userID'))
+        flash('Emptied cart', 'success')
+    else:
+        flash('Nothing in cart', 'info')
     return redirect(url_for('cart'))
 
 @app.route('/checkout', methods=['POST'])
@@ -105,38 +90,30 @@ def cart_delete_all():
 def checkout():
     form = CheckoutForm()
     if form.validate_on_submit():
-        users_cart = Cart.query.filter_by(userID = request.cookies.get('userid'))
-        if users_cart.first():
-            
+        users_cart = get_cart(request.cookies.get('userID'))
+        if users_cart:
+            cards = []
+            for item in users_cart:
+                card = get_card(item.cardID)
+                cards.append(card)
+                if card.quantity < item.quantity:
+                    flash(f'Unable to purchase {card.name}. Check if there is stock available from the card listing.', 'warning')
+                    return redirect(url_for('cart'))
             #create new order
-            new_order = Order(userID=request.cookies.get('userid'), total=0)
-            db.session.add(new_order)
-            db.session.commit()
-            
+            new_order = create_order(request.cookies.get('userID'))
             #Add to CardOrders
             total = 0
-
             #Check stock
-            for item in users_cart.all():
-                card = Card.query.get(item.cardID)
-                card_quantity = card.quantity
-                if card_quantity < item.quantity:
-                    flash(f'Unable to purchase {card.name}. Check if there is stock available from the card listing.', 'warning')
-                    db.session.delete(new_order)
-                    db.session.commit()
-                    return redirect(url_for('cart'))
-                total += card.price * item.quantity
-                card.quantity -= item.quantity
-                card_order = CardOrders(cardID=item.cardID, orderID=new_order.orderID, unit_price=card.price, quantity=item.quantity)
-                db.session.add(card_order)
-
+            for i, card in enumerate(cards):  
+                total += card.price * users_cart[i].quantity
+                card.quantity = card.quantity - users_cart[i].quantity
+                create_card_orders(cardID=item.cardID, orderID=new_order, unit_price=card.price, quantity=users_cart[i].quantity)
+            new_order = get_order(new_order)
             new_order.total = total
 
             #delete from cart
-            users_cart.delete()
+            delete_cart(request.cookies.get('userID'))
 
-            #Commit all changes
-            db.session.commit()
             flash('Purchase successful!', 'success')     
 
         else:
@@ -154,7 +131,7 @@ def change_password():
     if form.validate_on_submit():
         new = form.new.data
         current = form.current.data
-        user = getUser(userID=int(request.cookies.get('userid')))
+        user = getUser(userID=int(request.cookies.get('userID')))
         if user:
             if user.password == current:   
                 user.password = new
@@ -173,15 +150,16 @@ def login():
         return redirect(url_for('home'))
     search = SearchForm()
     form = LoginForm()
-    
     if request.method == 'POST':
         if form.validate_on_submit():
-            identifier = form.username.data.lower()
-            user = getUser(username=identifier)
+            username = form.username.data.lower()
+            password = form.password.data
+            #Returns User object if username and password is correct
+            user = check_login(username, password)
             if user:
                 resp = make_response(redirect(url_for('home')))
                 resp.set_cookie('logged_in', '1')
-                resp.set_cookie('userid', str(user.userID))
+                resp.set_cookie('userID', str(user.userID))
                 resp.set_cookie('username', str(user.username))
                 return resp
             else:
@@ -201,14 +179,15 @@ def logout():
     flash('User logged out', 'success')
     return resp
 
-
 @app.route('/manage', methods=['GET', 'POST'])
+@logged_in
+@admin_user
 def manage():
     searchForm = SearchForm()
     if searchForm.validate_on_submit():
-        cards = search_cards(searchForm.search.data)
+        cards = get_cards(request.form['search'])
     elif request.method=='GET':
-        cards = Card.query.all()
+        cards = get_cards()
     else:
         flash(f'Invalid search: {searchForm.search.data}', 'info')
         cards=None
@@ -229,10 +208,8 @@ def manage_add_card():
         attack = int(form.attack.data) if form.attack.data else None
         price = float(form.price.data)
         quantity = int(form.quantity.data) if form.quantity.data else 0
-        new_card = Card(name=name, image=image, type=type, text=text, hp=hp, attack=attack, price=price, quantity=quantity)
-        db.session.add(new_card)
-        db.session.commit()
-        flash(f'{name} Added', 'success')
+        new_card = create_card(name=name, image=image, type=type, text=text, hp=hp, attack=attack, price=price, quantity=quantity)
+        flash(f'{new_card.name} Added', 'success')
         return redirect(url_for('manage'))
     elif request.method == 'POST':
         flash(next(iter(form.errors.values()))[0], 'warning')
@@ -241,7 +218,7 @@ def manage_add_card():
 @app.route('/manage/edit/<id>', methods=['GET', 'POST'])
 def manage_edit_card(id):
     search = SearchForm()
-    card = Card.query.get(id)
+    card = get_card(int(id))
     if card:
         form = AddCardForm(obj=card)
         if form.validate_on_submit():
@@ -253,7 +230,6 @@ def manage_edit_card(id):
             card.attack = int(form.attack.data) if form.attack.data else None
             card.price = float(form.price.data)
             card.quantity = int(form.quantity.data) if form.quantity.data else 0
-            db.session.commit()
             flash('Card edited', 'success')
         elif request.method == 'POST':
             flash(next(iter(form.errors.values()))[0], 'warning')
@@ -268,8 +244,8 @@ def manage_edit_card(id):
 @logged_in
 def orders():
     search= SearchForm()
-    orders = Order.query.filter_by(userID=request.cookies['userid'])
-    return render_template('orders.html', search=search, orders=orders.all(), title='The Card Spot - Orders')
+    orders = get_orders(userID=request.cookies['userID'])
+    return render_template('orders.html', search=search, orders=orders, title='The Card Spot - Orders')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -283,28 +259,27 @@ def register():
         if exists:
             flash('Username or email already in use', 'warning')
         else:
-            user = User(username=username,password=form.password.data, email=email, create_user=True)
+            user = create_user(username=username,password=form.password.data, email=email)
             flash(f'{user.username} successfully registered!', 'success')
 
     elif request.method == 'POST':
         flash(next(iter(form.errors.values()))[0], 'danger')
-
     return render_template('register.html', title='The Card Spot- Register', form=form, search=search)    
 
 @app.route('/search', methods=['GET', 'POST'])
 def search():
     search = SearchForm()
-    if search.validate_on_submit():
-        cards = search_cards(search.search.data)
-    elif request.method == 'GET':
-        cards = Card.query.filter(Card.quantity > 0).all()
+    s = request.values.get('search')
+    if s:
+        cards = get_cards(s)
     else:
-        flash('Invalid search', 'warning')
-        return render_template('search.html', title='The Card Spot - Search', search=search)
+        cards = get_cards()
+
 
     forms = []
     for card in cards:
         form = CartForm()
+        print(card)
         form.id.data = card.cardID
         forms.append(form)    
-    return render_template('search.html', title='The Card Spot - Search', search=search, cards=cards, forms=forms)
+    return render_template('search.html', title='The Card Spot - Search', search=search, cards=cards, forms=forms, searchterm=s)
