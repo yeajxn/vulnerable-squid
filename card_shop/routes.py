@@ -260,7 +260,7 @@ def register():
             flash('Username or email already in use', 'warning')
         else:
             user = create_user(username=username,password=form.password.data, email=email)
-            flash(f'{user.username} successfully registered!', 'success')
+            flash(f'{username} successfully registered!', 'success')
 
     elif request.method == 'POST':
         flash(next(iter(form.errors.values()))[0], 'danger')
