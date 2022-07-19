@@ -1,0 +1,45 @@
+services:
+  mysqldb:
+    user: "1000:50"
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: squid_db
+      MYSQL_USER: squidmin
+      MYSQL_PASSWORD: testpass
+      MYSQL_INITDB_SKIP_TZINFO: SKIP
+    command: "mysqld --ignore-db-dir=lost+found"
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_vol:/home/app/mysql/data
+  web:
+    build: ./web
+    restart: always
+    expose:
+      - 5000
+    environment:
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONUNBUFFERED: 1
+      SECRET_KEY: Asupersecret!
+      DATABASE_NAME: squid_db
+      DATABASE_USER: squidmin
+      DATABASE_PASSWORD: testpass
+    volumes:
+      - ./web:/home/app/web
+    depends_on:
+      - mysqldb
+  nginx:
+    build: ./nginx
+    restart: always
+    ports:
+      - 80:80
+    depends_on:
+      - web
+networks:
+  default:
+    name: squid-network
+volumes:
+  web_vol: {}
+  db_vol: {}

@@ -6,7 +6,6 @@ from .forms import ChangePasswordForm, CartForm, CartDeleteForm, CartDeleteAllFo
 from .database import create_card_orders, getUser, get_card, get_cards, get_cart, get_cart_item, get_order, get_orders
 from .database import create_user, create_card, add_to_cart, create_order, check_login
 from .database import delete_cart_item, delete_cart
-from datetime import datetime
 
 def logged_in(f):
     @wraps(f)
@@ -161,6 +160,8 @@ def login():
                 resp.set_cookie('logged_in', '1')
                 resp.set_cookie('userID', str(user.userID))
                 resp.set_cookie('username', str(user.username))
+                if user.user_type == 'A':
+                    resp.set_cookie('user_type', 'A')
                 return resp
             else:
                 flash('Invalid username or password', 'danger')
