@@ -103,3 +103,7 @@ class CartDeleteAllForm(FlaskForm):
 class CheckoutForm(FlaskForm):
     class Meta:
         csrf = False
+
+class ResetDatabaseForm(FlaskForm):
+    class Meta:
+        csrf = True

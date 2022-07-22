@@ -1,4 +1,4 @@
-from .database import connector
+from .database import commit_query, get_query
 from datetime import datetime
 
 class Card:
@@ -23,10 +23,9 @@ class Card:
 
     @name.setter
     def name(self, new:str):
-        c = connector()
+        sql = f'UPDATE card SET name="{new}" WHERE cardID={self.__cardID}'
+        commit_query(sql)
         self.__name = new
-        c.execute(f'UPDATE card SET name = "{new}" WHERE cardID={self.__cardID}')
-        c.commit()
 
     @property
     def image(self):
@@ -34,10 +33,9 @@ class Card:
 
     @image.setter
     def image(self, new):
-        c = connector()
+        sql = f'UPDATE card SET image="{new}" WHERE cardID={self.__cardID}'
         self.__image = new
-        c.execute(f'UPDATE card SET image = "{new}" WHERE cardID={self.__cardID}')
-        c.commit()
+        commit_query(sql)
 
     @property
     def type(self):
@@ -45,54 +43,49 @@ class Card:
 
     @type.setter
     def type(self, new:str):
-        c = connector()
-        self.__name = new
-        c.execute(f'UPDATE card SET type = "{new}" WHERE cardID={self.__cardID}')
-        c.commit()
+        sql = f'UPDATE card SET type="{new}" WHERE cardID={self.__cardID}'
+        commit_query(sql)
+        self.__type = new
 
     @property
     def text(self):
         return self.__text
     
     @text.setter
-    def type(self, new:str):
-        c = connector()
-        self.__name = new
-        c.execute(f'UPDATE card SET text = "{new}" WHERE cardID={self.__cardID}')
-        c.commit()
+    def text(self, new:str):
+        sql = f'UPDATE card SET text="{new}" WHERE cardID={self.__cardID}'
+        commit_query(sql)
+        self.__text = new
     
     @property
     def attack(self):
         return self.__attack
 
     @attack.setter
-    def type(self, new:str):
-        c = connector()
-        self.__name = new
-        c.execute(f'UPDATE card SET attack = {new} WHERE cardID={self.__cardID}')
-        c.commit()
+    def attack(self, new:str):
+        sql = f'UPDATE card SET attack={new} WHERE cardID = {self.__cardID}'
+        commit_query(sql)
+        self.__attack = new
 
     @property
     def hp(self):
         return self.__hp
 
     @hp.setter
-    def type(self, new:str):
-        c = connector()
-        self.__name = new
-        c.execute(f'UPDATE card SET hp = {new} WHERE cardID={self.__cardID}')
-        c.commit()
+    def hp(self, new:int):
+        sql = f'UPDATE card SET hp={new} WHERE cardID={self.__cardID}'
+        commit_query(sql)
+        self.__hp = new
 
     @property
     def price(self):
         return self.__price
     
     @price.setter
-    def type(self, new:str):
-        c = connector()
-        self.__name = new
-        c.execute(f'UPDATE card SET price = {new} WHERE cardID={self.__cardID}')
-        c.commit()
+    def price(self, new:float):
+        sql = f'UPDATE card SET price={new} WHERE cardID={self.__cardID}'
+        commit_query(sql)
+        self.__price = new
 
     @property
     def quantity(self):
@@ -100,10 +93,9 @@ class Card:
 
     @quantity.setter
     def quantity(self, new:str):
-        c = connector()
+        sql = f'UPDATE card SET quantity={new} WHERE cardID={self.__cardID}'
+        commit_query(sql)
         self.__quantity = new
-        c.execute(f'UPDATE card SET quantity = {new} WHERE cardID={self.__cardID}')
-        c.commit()
 
 class User():
     def __init__(self, userID, username, email, name, password, user_type='U'):
@@ -136,9 +128,10 @@ class User():
 
     @password.setter
     def password(self, new):
-        c = connector()
-        c.execute(f'UPDATE user SET password="{new}" WHERE userID={self.__userID}')
-        c.commit()
+        from .hashing import hash_password
+        password = hash_password(new)
+        sql = f'UPDATE user SET password="{password}" WHERE userID={self.__userID}'
+        commit_query(sql)
         self.__password = new
 
     @property
@@ -165,19 +158,14 @@ class Cart:
 
     @quantity.setter
     def quantity(self, value):
-        c = connector()
-        sql = f'UPDATE cart SET quantity = {value} WHERE cardID = {self.__cardID}'
-        c.execute(sql)
-        c.commit()
+        sql = f'UPDATE cart SET quantity={value} WHERE cardID={self.__cardID}'
+        commit_query(sql)
         self.__quantity = value
 
     @property
     def cardInfo(self):
-        c = connector()
-        cursor = c.cursor()
-        sql = f'SELECT * FROM card WHERE cardID = {self.__cardID}'
-        cursor.execute(sql)
-        card_sql = cursor.fetchone()
+        sql = f'SELECT * FROM card WHERE cardID={self.__cardID}'
+        card_sql = get_query(sql)[0]
         card = Card(card_sql[0], card_sql[1], card_sql[2], card_sql[3], card_sql[4],card_sql[5], card_sql[6], card_sql[7], card_sql[8])
         return card
     
@@ -207,10 +195,8 @@ class Order:
 
     @total.setter
     def total(self, total):
-        c = connector()
-        sql = f'UPDATE "order" SET total = {total} WHERE orderID = {self.__orderID}'
-        c.execute(sql)
-        c.commit()
+        sql = f'UPDATE `orders` SET total={total} WHERE orderID={self.__orderID}'
+        commit_query(sql)
         self.__total = total
 
 class CardOrders:
@@ -236,11 +222,9 @@ class CardOrders:
     @quantity.setter
     def quantity(self, value):
         if value != self.__quantity:
+            sql = f'UPDATE card_orders SET quantity={value} WHERE cardID={self.__cardID} AND orderID = {self.__orderID}'
+            commit_query(sql)
             self.__quantity = value
-            c = connector()
-            sql = f'UPDATE cardorders SET quantity = {value} WHERE cardID = {self.__cardID} AND orderID = {self.__orderID}'
-            c.execute(sql)
-            c.commit()
 
     @property
     def unit_price(self):
@@ -249,8 +233,6 @@ class CardOrders:
     @unit_price.setter
     def unit_price(self, price):
         if price != self.__unit_price:
+            sql = f'UPDATE card_orders SET unit_price={price} WHERE cardID={self.__cardID} AND orderID={self.__orderID}'
+            commit_query(sql)
             self.__unit_price = price
-            c = connector()
-            sql = f'UPDATE cardorders SET unit_price = {price} WHERE cardID = {self.__cardID} AND orderID = {self.__orderID}'
-            c.execute(sql)
-            c.commit()

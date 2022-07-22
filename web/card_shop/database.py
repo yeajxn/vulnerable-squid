@@ -1,16 +1,19 @@
 import mysql.connector
 from datetime import datetime
-from . import DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD
+from . import DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST
 from .hashing import hash_password, check_hash
 
 def connector():
-    c = mysql.connector.connect(
-        host='mysqldb', 
-        database=DATABASE_NAME,
-        user=DATABASE_USER,
-        password=DATABASE_PASSWORD
-        )
-    return c
+    try:
+        c = mysql.connector.connect(
+            host=DATABASE_HOST, 
+            database=DATABASE_NAME,
+            user=DATABASE_USER,
+            password=DATABASE_PASSWORD
+            )
+        return c
+    except:
+        print('Unable to connect to database.')
 
 def create_db():
     with connector() as c:
@@ -59,7 +62,7 @@ def create_db():
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS orders (
-                orderID int NOT NULL, 
+                orderID int AUTO_INCREMENT, 
                 userID int NOT NULL, 
                 date DATETIME NOT NULL, 
                 total FLOAT NOT NULL, 
@@ -82,39 +85,39 @@ def create_db():
             """
         )
         c.commit()
-        print('Created databases.')   
+        print('Created database tables.')   
+
+def populate_db():
+    from .default_cards import card_list
+    with connector() as c:
+        cur = c.cursor()
+        sql = 'INSERT INTO card (name, image, type, text, attack, hp, price, quantity) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)'
+        cur.executemany(sql, card_list)
+        c.commit()
+        print(cur.rowcount, "cards inserted.")
+
 
 def reset_db():
     with connector() as c:
         cur = c.cursor()
-        cur.execute(
-            """
-            DROP TABLE IF EXISTS card_orders
-            """
-        )
-        cur.execute(
-            """
-            DROP TABLE IF EXISTS orders
-            """
-        )
-        cur.execute(
-            """
-            DROP TABLE IF EXISTS cart
-            """
-        )
-        cur.execute(
-            """
-            DROP TABLE IF EXISTS card
-            """
-        )
-        cur.execute(
-            """
-            DROP TABLE IF EXISTS user
-            """
-        )
+        cur.execute(f"DROP DATABASE {DATABASE_NAME}")
         c.commit()
+        print("Database deleted.")
+    try:
+        c = mysql.connector.connect(
+            host=DATABASE_HOST,
+            user=DATABASE_USER,
+            password=DATABASE_PASSWORD
+            )
+        cur = c.cursor()
+        cur.execute(f"CREATE DATABASE {DATABASE_NAME}")
+        c.commit()
+        print("Database created.")
+    except:
+        print('Unable to connect to database.')
     create_db()
     create_admin()
+    populate_db()
 
 
 def create_admin(username="admin"):
@@ -123,31 +126,40 @@ def create_admin(username="admin"):
         cur.execute('SELECT * FROM user WHERE username = %s', (username,))
         admin = cur.fetchone()
         if admin:
+            print(f"Admin user '{username}' already exists.")
             return
         pwd = hash_password('password')
-        cur.execute('INSERT INTO user (username, email, password, user_type) VALUES (%s, %s, %s, %s)',
-        ("admin", "admin@mail.com.", pwd, "A")
+        cur.execute(
+            'INSERT INTO user (username, email, password, user_type) VALUES (%s, %s, %s, %s)',
+            ("admin", "admin@mail.com.", pwd, "A")
         )
         c.commit()
+        print(f"Admin user '{username}' created.")
+        return(cur.rowcount)
 
 def commit_query(sql):
     with connector() as c:
-        cur = c.cursor()
-        cur.execute(sql)
-        c.commit()
-        return cur.lastrowid
+        try:
+            cur = c.cursor()
+            cur.execute(sql)
+            c.commit()
+            return cur.lastrowid
+        except Exception as e:
+            print(f'Unable to commit sql: {sql}, {e}')
 
 def get_query(sql, multi=True):
     with connector() as c:
-        cur = c.cursor()
-        cur.execute(sql)
-        if multi:
-            return cur.fetchall()
-        else:
-            return cur.fetchone()
+        try:
+            cur = c.cursor()
+            cur.execute(sql)
+            if multi:
+                return cur.fetchall()
+            else:
+                return cur.fetchone()
+        except Exception as e:
+            print(f'Unable to get sql: {sql}, {e}')
 
-from .models import Card, Order, Cart, User, CardOrders
-
+from .models import Card, Order, Cart, User
 """
 User
 """
@@ -171,6 +183,7 @@ def getUser(userID=None, username=None, email=None):
         return User(userID=user[0], username=user[1], email=user[2], name=user[3], password=user[4], user_type=user[5])
 
 def create_user(username, email, password, user_type='U'):
+    password = hash_password(password)
     sql = f'INSERT INTO user (username, email, password, user_type) VALUES ("{username}", "{email}", "{password}", "{user_type}")'
     commit_query(sql)
     sql = f'SELECT * FROM user WHERE "username" = "{username}"'
@@ -190,16 +203,16 @@ Card
 def get_card(id:int):
     if not id:
         return
-    sql = f'SELECT * FROM card WHERE "cardID" = {id}'
+    sql = f'SELECT * FROM card WHERE cardID = {id}'
     card_sql = get_query(sql, False)
     card = Card(card_sql[0], card_sql[1], card_sql[2], card_sql[3], card_sql[4],card_sql[5], card_sql[6], card_sql[7], card_sql[8])
     return card
 
 def get_cards(search:str=None):
     if not search:
-        sql = f'SELECT * FROM card WHERE "quantity" > 0'
+        sql = f'SELECT * FROM card WHERE quantity > 0'
     else:
-        sql = f'SELECT * FROM card WHERE "quantity" > 0 AND "name" LIKE "%{search}%" OR  "text" LIKE "%{search}%"'
+        sql = f'SELECT * FROM card WHERE quantity > 0 AND name LIKE "%{search}%" OR  "text" LIKE "%{search}%"'
     cards_tuple = get_query(sql)
     cards = [Card(card[0], card[1], card[2], card[3], card[4],card[5], card[6], card[7], card[8]) for card in cards_tuple]
     return cards
@@ -241,9 +254,10 @@ def get_cart(userID:int):
         return cart
 
 def get_cart_item(userID:int, cardID:int):
-    sql = f'SELECT * FROM cart WHERE userID = {userID} AND cardID = {cardID}'
+    sql = f'SELECT * FROM cart WHERE userID={userID} AND cardID={cardID}'
     item = get_query(sql, False)
     if item:
+        print(item)
         return Cart(item[0], item[1], item[2])
 
 """
@@ -252,7 +266,7 @@ Order
 def create_order(userID:int, date:datetime = datetime.now(), total=0) -> int:
     with connector() as c:
         cursor = c.cursor()
-        sql = f"INSERT INTO 'orders' (userID, date, total) VALUES ({userID}, '{date}', {total})"
+        sql = f"INSERT INTO `orders` (userID, date, total) VALUES ({userID}, '{date}', {total})"
         cursor.execute(sql)
         c.commit()
         return cursor.lastrowid
@@ -276,7 +290,3 @@ CardOrders
 def create_card_orders(orderID, cardID, quantity, unit_price):
     sql = f'INSERT INTO card_orders (orderID, cardID, quantity, unit_price) VALUES ({orderID}, {cardID}, {quantity}, {unit_price})'
     return commit_query(sql)
-
-# db = sqlite3_db('/home/code/Documents/card.db')
-# user = db.getUser(username="admin")
-# print(user.password)

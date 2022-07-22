@@ -1,0 +1,78 @@
+card_list = [
+        (
+            "Hobiruk", 
+            "https://i.imgur.com/KuuwIUZ.png", 
+            "Light", 
+            "Discard this card from your hand to reduce damage from an opponents attack to 0.", 
+            3, 
+            30, 
+            73.5, 
+            27),
+        (
+            "Light Magician Girl", 
+            "https://i.imgur.com/3o6Zx8X.png", 
+            "Light", 
+            'Gain 3 attack for each "Light Magician" in your cemetery.', 
+            20, 
+            85, 
+            288, 
+            8
+        ),
+        (
+            "Light Magician", 
+            "https://i.imgur.com/USKEBLe.png", 
+            "Light", 
+            "Just an average magician.", 
+            25, 
+            130, 
+            8, 
+            1200,
+        ),
+        (
+            "Light Magician's Grill", 
+            "https://i.imgur.com/J2YsAZj.png", 
+            "Light", 
+            '<h3>SUPER RARE MISPRINT EDITION!!!</h3><br>When this card is on the field, increase the attack of "Dark Magician" and "Dark Magician Girl" by 3.', 
+            0, 
+            5,
+            10000,
+            1
+        ),
+        (
+            "Light Magician's Grill", 
+            "https://i.imgur.com/0SgxmA3.png", 
+            "Light", 
+            'When this card is on the field, increase the attack of "Light Magician" and "Light Magician Girl" by 3.', 
+            0, 
+            5,
+            32,
+            59
+        ),
+        (
+            "Baby Shark", 
+            "https://i.imgur.com/LhM0Ge5.png", 
+            "Water", 
+            "What do baby shark's do? Do you know?", 
+            30, 
+            50, 
+            73, 
+            12),
+        (
+            "Daddy Shark", 
+            "https://i.imgur.com/rHb8F7M.png", 
+            "Water", 
+            'Everytime this card attacks, you can search your deck for a "Baby Shark" and summon it.', 
+            200, 
+            25, 
+            99, 
+            15),
+        (
+            "Blue Eyes Ultimate Shark", 
+            "https://i.imgur.com/5V2h75R.png", 
+            "Water", 
+            'You can only summon this card by sacrificing 3 "Baby Shark"s and 1 "Daddy Shark" you control. ', 
+            300, 
+            160, 
+            350.35, 
+            3)
+    ]

@@ -1,7 +1,9 @@
 from functools import wraps
+
+from web.card_shop.hashing import check_hash
 from . import app
 from flask import render_template, redirect, url_for, request, flash, make_response
-from .forms import AddCardForm, LoginForm, RegisterForm, SearchForm 
+from .forms import AddCardForm, LoginForm, RegisterForm, SearchForm, ResetDatabaseForm
 from .forms import ChangePasswordForm, CartForm, CartDeleteForm, CartDeleteAllForm, CheckoutForm
 from .database import create_card_orders, getUser, get_card, get_cards, get_cart, get_cart_item, get_order, get_orders
 from .database import create_user, create_card, add_to_cart, create_order, check_login
@@ -27,7 +29,8 @@ def admin_user(f):
 @app.route("/")
 def home():
     search = SearchForm()
-    return render_template('home.html', title='The Card Spot - Home', search=search)
+    ResetDBForm = ResetDatabaseForm()
+    return render_template('home.html', title='The Card Spot - Home', search=search, ResetDBForm=ResetDBForm)
 
 @app.route('/cart', methods=['GET', 'POST'])
 @logged_in
@@ -54,11 +57,12 @@ def cart():
     cart = get_cart(request.cookies.get('userID'))
     total = 0
     cart_delete_forms = []
-    for item in cart:
-        total += item.cardInfo.price * item.quantity
-        cart_delete_form = CartDeleteForm()
-        cart_delete_form.id.data = item.cardID
-        cart_delete_forms.append(cart_delete_form)
+    if cart:
+        for item in cart:
+            total += item.cardInfo.price * item.quantity
+            cart_delete_form = CartDeleteForm()
+            cart_delete_form.id.data = item.cardID
+            cart_delete_forms.append(cart_delete_form)
     return render_template('cart.html', cart=cart, search=search, total=total, 
     cart_delete_forms=cart_delete_forms, checkout=checkout, clear_cart=clear_cart, title='The Card Spot - Cart')
 
@@ -132,7 +136,7 @@ def change_password():
         current = form.current.data
         user = getUser(userID=int(request.cookies.get('userID')))
         if user:
-            if user.password == current:   
+            if check_hash(user.password, current):   
                 user.password = new
                 flash('Password changed', 'success')
             else:
@@ -260,12 +264,21 @@ def register():
         if exists:
             flash('Username or email already in use', 'warning')
         else:
-            user = create_user(username=username,password=form.password.data, email=email)
+            create_user(username=username,password=form.password.data, email=email)
             flash(f'{username} successfully registered!', 'success')
 
     elif request.method == 'POST':
         flash(next(iter(form.errors.values()))[0], 'danger')
     return render_template('register.html', title='The Card Spot- Register', form=form, search=search)    
+
+@app.route('/resetDB', methods=['POST'])
+def reset_database():
+    from .database import reset_db
+    ResetDBForm = ResetDatabaseForm()
+    if ResetDBForm.validate_on_submit():
+        reset_db()
+        flash('Database Reset!', 'danger')
+    return redirect(url_for('home'))
 
 @app.route('/search', methods=['GET', 'POST'])
 def search():
@@ -276,11 +289,9 @@ def search():
     else:
         cards = get_cards()
 
-
     forms = []
     for card in cards:
         form = CartForm()
-        print(card)
         form.id.data = card.cardID
         forms.append(form)    
     return render_template('search.html', title='The Card Spot - Search', search=search, cards=cards, forms=forms, searchterm=s)

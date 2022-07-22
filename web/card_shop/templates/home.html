@@ -11,10 +11,10 @@
     <div class="'container py-3">
         <div class="row">
             <div class="col">
-                <h2>Born out of necessity</h2>
-                <p>In order to complete his school project, this website was created by yeajxn.</p>
+                <h2>What is this?</h2>
+                <p>The Card Spot is an intentionally vulnerable web application meant for pen-testing and research.</p>
                 <h2>What we offer</h2>
-                <p>Get your favourite pieces of cardboard at exhorbitant prices!</p>
+                <p>Get your favourite pieces of cardboard (no not really) at exhorbitant prices!</p>
                 <p>No matter how "rare" a card is, we can always just print more. So don't worry, we will always have them in stock!</p>
             </div>
             <div class="col">
@@ -46,10 +46,23 @@
                 </figure>
             </div>
         </div>
-        <div class="row mt-5 text-center disclaimer">
-            <h1>Disclaimer</h1>
-            <p class="fs-3">This website does not offer any legitimate services. </p>
-            <p>Any relations to any figures or characters is purely coincidental.</p>
+    </div>
+</div>
+<div class="container full-section">
+    {% include 'alert.html' %}
+    <div class="row mt-5 text-center disclaimer">
+        <h1>Disclaimer</h1>
+        <p class="fs-3">This website does not offer any legitimate services. </p>
+        <p>Any relations to any figures or characters is purely coincidental.</p>
+    </div>
+    <div class="row text-center my-3 p-3">
+        <div class="col-sm-6 offset-sm-3">
+            <form method="post" action="{{url_for('reset_database')}}">
+                {{ ResetDBForm.csrf_token }}
+                <button class="btn btn-danger btn-lg">RESET DATABASE</button>
+                <br>
+                <small>Use this link to reset the database to default values.</small>        
+            </form>
         </div>
     </div>
 </div>
