@@ -1,6 +1,6 @@
 from functools import wraps
 
-from web.card_shop.hashing import check_hash
+from .hashing import check_hash
 from . import app
 from flask import render_template, redirect, url_for, request, flash, make_response
 from .forms import AddCardForm, LoginForm, RegisterForm, SearchForm, ResetDatabaseForm

@@ -7,7 +7,6 @@ services:
       MYSQL_ROOT_PASSWORD: rootpass
       MYSQL_DATABASE: squid_db
       MYSQL_INITDB_SKIP_TZINFO: SKIP
-    # command: "mysqld --ignore-db-dir=lost+found"
     ports:
       - "3306:3306"
     volumes:
